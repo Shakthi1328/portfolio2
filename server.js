@@ -23,34 +23,32 @@ console.log('RECEIVER_EMAIL present:', !!process.env.RECEIVER_EMAIL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
-// Configure Nodemailer transporter with explicit settings (Port 587 for STARTTLS)
+// Configure Nodemailer transporter with more aggressive cloud settings
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // use STARTTLS
+    service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000
+    tls: {
+        rejectUnauthorized: false // Helps with some cloud network restrictions
+    }
 });
 
 // Verify connection configuration
 transporter.verify(function (error, success) {
     if (error) {
-        console.error('Nodemailer verification error DETECTED:');
+        console.error('❌ Nodemailer verification error:');
         console.error('- Message:', error.message);
         console.error('- Code:', error.code);
-        console.error('- Command:', error.command);
     } else {
-        console.log('✅ Success: Server is ready to take our messages');
+        console.log('✅ Success: SMTP Server is connected and ready');
     }
 });
 
 // Contact Route
 app.post('/api/contact', async (req, res) => {
+    console.log('📩 Incoming contact request from:', req.body.email);
     const { name, email, subject, message } = req.body;
 
     if (!name || !email || !message) {
@@ -67,16 +65,16 @@ app.post('/api/contact', async (req, res) => {
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent successfully from ${name}`);
+        console.log(`✅ Email sent successfully to inbox for ${name}`);
         res.status(200).json({ success: true, message: 'Message sent successfully!' });
     } catch (error) {
-        console.error('Error sending email trace:');
+        console.error('❌ Error sending email trace:');
         console.error('- Message:', error.message);
         console.error('- Code:', error.code);
-        res.status(500).json({ success: false, error: 'Failed to send message. Please try again later.' });
+        res.status(500).json({ success: false, error: `Server Error: ${error.message}` });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
