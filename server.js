@@ -1,26 +1,22 @@
-require('dotenv').config();
-const express = require('express');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
-const path = require('path');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, 'public')));
+// Database Connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
 // Log environment variable existence (but hide actual values for security)
 console.log('--- Environment Check ---');
 console.log('EMAIL_USER present:', !!process.env.EMAIL_USER);
 console.log('EMAIL_PASS present:', !!process.env.EMAIL_PASS);
 console.log('RECEIVER_EMAIL present:', !!process.env.RECEIVER_EMAIL);
-console.log('DISCORD_WEBHOOK_URL present:', !!process.env.DISCORD_WEBHOOK_URL);
+console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
@@ -61,31 +57,17 @@ app.post('/api/contact', async (req, res) => {
     }
 
     try {
-        // 1. Send to Discord Webhook
-        if (process.env.DISCORD_WEBHOOK_URL) {
-            console.log('👾 Sending notification to Discord...');
-            const discordMessage = {
-                embeds: [{
-                    title: `📩 New Portfolio Message: ${subject || 'No Subject'}`,
-                    color: 3447003, // Blue
-                    fields: [
-                        { name: '👤 Name', value: name, inline: true },
-                        { name: '📧 Email', value: email, inline: true },
-                        { name: '📝 Message', value: message }
-                    ],
-                    timestamp: new Date()
-                }]
-            };
-
-            await fetch(process.env.DISCORD_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(discordMessage)
-            });
-            console.log('✅ Success: Discord notification sent');
+        // 1. Store in Database first
+        if (process.env.DATABASE_URL) {
+            console.log('💾 Saving message to database...');
+            await pool.query(
+                'INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)',
+                [name, email, subject, message]
+            );
+            console.log('✅ Success: Message stored in SQL');
         }
 
-        // 2. Send via Email balance
+        // 2. Send via Email
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER,
@@ -96,7 +78,7 @@ app.post('/api/contact', async (req, res) => {
 
         await transporter.sendMail(mailOptions);
         console.log(`✅ Email sent successfully to inbox for ${name}`);
-        res.status(200).json({ success: true, message: 'Message sent successfully (Discord + Email)!' });
+        res.status(200).json({ success: true, message: 'Message sent successfully (Saved + Email)!' });
     } catch (error) {
         console.error('❌ Error processing request:', error.message);
         res.status(500).json({ success: false, error: `Server Error: ${error.message}` });
