@@ -33,7 +33,7 @@ console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
-// Configure Nodemailer transporter with pooling and longer timeouts
+// Configure Nodemailer transporter with extra-long timeouts for cloud stability
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
@@ -43,18 +43,22 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    connectionTimeout: 30000, // 30 seconds
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 60000,
+    socketTimeout: 60000,
+    debug: true,
+    logger: true,
     tls: {
         rejectUnauthorized: false
     }
 });
 
-// Verify connection configuration
+// Verify connection configuration (log but don't crash)
 transporter.verify(function (error, success) {
     if (error) {
-        console.error('❌ Nodemailer verification error:', error.message);
+        console.log('⚠️ Nodemailer Warning (SMTP restricted by network):');
+        console.log('- Details:', error.message);
+        console.log('💡 Note: Your messages will still be saved to the database!');
     } else {
         console.log('✅ Success: SMTP Server is connected and ready');
     }
@@ -70,7 +74,7 @@ app.post('/api/contact', async (req, res) => {
     }
 
     try {
-        // 1. Store in Database first
+        // 1. Store in Database (Primary Storage)
         if (process.env.DATABASE_URL) {
             console.log('💾 Saving message to database...');
             await pool.query(
@@ -80,7 +84,29 @@ app.post('/api/contact', async (req, res) => {
             console.log('✅ Success: Message stored in SQL');
         }
 
-        // 2. Send via Email
+        // 2. Send to Discord (Secondary Backup)
+        if (process.env.DISCORD_WEBHOOK_URL) {
+            console.log('👾 Sending notification to Discord...');
+            const discordMessage = {
+                embeds: [{
+                    title: `📩 New Portfolio Message: ${subject || 'No Subject'}`,
+                    color: 3447003,
+                    fields: [
+                        { name: '👤 Name', value: name, inline: true },
+                        { name: '📧 Email', value: email, inline: true },
+                        { name: '📝 Message', value: message }
+                    ],
+                    timestamp: new Date()
+                }]
+            };
+            await fetch(process.env.DISCORD_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(discordMessage)
+            }).catch(e => console.error('Discord Webhook Error:', e.message));
+        }
+
+        // 3. Send via Email (Notification)
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER,
@@ -89,11 +115,20 @@ app.post('/api/contact', async (req, res) => {
             replyTo: email
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent successfully to inbox for ${name}`);
-        res.status(200).json({ success: true, message: 'Message sent successfully (Saved + Email)!' });
+        // We wrap email in its own try/catch so the user gets a "Success" even if email times out
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log(`✅ Email sent successfully to inbox for ${name}`);
+        } catch (emailError) {
+            console.log('⚠️ Email Delivery Failed (Network Timeout), but data was saved locally!');
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Message sent successfully! (Saved to Database)' 
+        });
     } catch (error) {
-        console.error('❌ Error processing request:', error.message);
+        console.error('❌ Major Server Error:', error.message);
         res.status(500).json({ success: false, error: `Server Error: ${error.message}` });
     }
 });
