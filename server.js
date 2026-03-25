@@ -76,12 +76,17 @@ app.post('/api/contact', async (req, res) => {
     try {
         // 1. Store in Database (Primary Storage)
         if (process.env.DATABASE_URL) {
-            console.log('💾 Saving message to database...');
-            await pool.query(
-                'INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)',
-                [name, email, subject, message]
-            );
-            console.log('✅ Success: Message stored in SQL');
+            try {
+                console.log('💾 Saving message to database...');
+                await pool.query(
+                    'INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)',
+                    [name, email, subject, message]
+                );
+                console.log('✅ Success: Message stored in SQL');
+            } catch (dbError) {
+                console.log('⚠️ Database Save Failed:', dbError.message);
+                console.log('💡 Note: Ensure you ran "node init_db.js" in the Render Shell!');
+            }
         }
 
         // 2. Send to Discord (Secondary Backup)
