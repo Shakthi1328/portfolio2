@@ -92,7 +92,7 @@ app.post('/api/contact', async (req, res) => {
         // 2. Send to Discord (Secondary Backup)
         if (process.env.DISCORD_WEBHOOK_URL) {
             console.log('👾 Sending notification to Discord...');
-            const discordMessage = {
+            const discordMessage = JSON.stringify({
                 embeds: [{
                     title: `📩 New Portfolio Message: ${subject || 'No Subject'}`,
                     color: 3447003,
@@ -103,12 +103,24 @@ app.post('/api/contact', async (req, res) => {
                     ],
                     timestamp: new Date()
                 }]
-            };
-            await fetch(process.env.DISCORD_WEBHOOK_URL, {
+            });
+
+            const url = new URL(process.env.DISCORD_WEBHOOK_URL);
+            const https = require('https');
+            const options = {
+                hostname: url.hostname,
+                path: url.pathname,
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(discordMessage)
-            }).catch(e => console.error('Discord Webhook Error:', e.message));
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(discordMessage)
+                }
+            };
+
+            const reqDiscord = https.request(options);
+            reqDiscord.on('error', (e) => console.error('Discord Error:', e.message));
+            reqDiscord.write(discordMessage);
+            reqDiscord.end();
         }
 
         // 3. Send via Email (Notification)

@@ -100,19 +100,24 @@ contactForm.addEventListener('submit', async (e) => {
             body: JSON.stringify(formData)
         });
 
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            // Success
-            formStatus.textContent = data.message || 'Message sent successfully!';
-            formStatus.classList.add('status-success');
-            contactForm.reset();
+        // Check if response is JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            const data = await response.json();
+            if (response.ok && data.success) {
+                formStatus.textContent = data.message || 'Message sent successfully!';
+                formStatus.classList.add('status-success');
+                contactForm.reset();
+            } else {
+                throw new Error(data.error || 'Server error occurred.');
+            }
         } else {
-            // Server error
-            throw new Error(data.error || 'Failed to send message.');
+            // Not JSON (probably a 500 HTML error page)
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('Server Error (Check Render Logs)');
         }
     } catch (error) {
-        // Network or logic error
         console.error('Submission error:', error);
         formStatus.textContent = error.message;
         formStatus.classList.add('status-error');
