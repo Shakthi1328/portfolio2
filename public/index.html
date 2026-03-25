@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portfolio | Web Developer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="logo"><span>Port</span>folio</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="hamburger">
+                <i class="fas fa-bars"></i>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Home Section -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>Hi, I'm <span class="highlight">Shakthi Sundar R</span> 👨‍💻</h1>
+                <h2 class="typing-text">I am a <span class="typed" data-typed-items="Web Developer, UI/UX Enthusiast, Full Stack Engineer"></span><span class="cursor">|</span></h2>
+                <p>Welcome to my digital space! I build beautiful, responsive, and dynamic web applications. 🚀</p>
+                <div class="hero-buttons">
+                    <a href="#projects" class="btn primary-btn">View My Work</a>
+                    <a href="#contact" class="btn secondary-btn">Contact Me</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <!-- A subtle floating animation wrapper -->
+                <div class="blob-wrapper">
+                    <div class="blob"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="about">
+            <h2 class="section-title">About <span>Me</span></h2>
+            <div class="about-container">
+                <div class="about-text">
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">🎓 Education & Journey</h3>
+                    <p>I am pursuing my <strong>BSc in Data Science</strong> at <strong>Kristu Jayanti University</strong>. My passion lies in crafting digital experiences that are visually stunning, highly functional, and driven by data insights. 📊</p>
+                    <p>In a college environment, I continuously learn and adapt to new technologies to stay ahead in the tech landscape. Let's create something amazing together! ✨</p>
+                </div>
+                <div class="about-stats">
+                    <div class="stat-box">
+                        <h3>2+</h3>
+                        <p>Years Experience</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>10+</h3>
+                        <p>Projects Completed</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section id="skills" class="skills">
+            <h2 class="section-title">Technical <span>Expertise</span> 💡</h2>
+            <div style="margin-bottom: 2rem; color: var(--text-secondary); text-align: center; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.8;">
+                <p>Here is a brief overview of my core technical competencies. I specialize in building responsive user interfaces, scalable backend architectures, and applying object-oriented programming to solve complex problems efficiently and elegantly. 💻</p>
+            </div>
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <i class="fab fa-html5"></i>
+                    <h3>HTML5 & CSS3 🎨</h3>
+                    <p>Crafting semantic, accessible, and beautifully styled digital experiences. I use modern CSS to create responsive layouts and dynamic animations that bring websites to life. 🌟</p>
+                </div>
+                <div class="skill-card">
+                    <i class="fab fa-java"></i>
+                    <h3>Java ☕</h3>
+                    <p>Applying strong object-oriented programming principles to build scalable and efficient applications. Experienced in developing robust logic and handling complex algorithms. ⚙️</p>
+                </div>
+                <div class="skill-card">
+                    <i class="fab fa-node-js"></i>
+                    <h3>Node.js 🚀</h3>
+                    <p>Architecting fast backend services. I build APIs, manage server-side logic, and integrate systems to ensure seamless communication between the frontend and backend. 🔌</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Form / Contact Section -->
+        <section id="contact" class="contact">
+            <h2 class="section-title">Get In <span>Touch</span></h2>
+            <p class="contact-subtitle">Have a project in mind or just want to say hi? Send me a message!</p>
+            
+            <div class="contact-container">
+                <form id="contactForm" class="contact-form">
+                    <div class="form-group">
+                        <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" placeholder="Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="subject" name="subject" placeholder="Subject">
+                    </div>
+                    <div class="form-group">
+                        <textarea id="message" name="message" rows="5" placeholder="Your Message" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span>Send Message</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                    <div id="formStatus" class="form-status"></div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="social-links">
+                <a href="#"><i class="fab fa-github"></i></a>
+                <a href="#"><i class="fab fa-linkedin"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+            </div>
+            <p>&copy; <span id="year"></span> Portfolio. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
