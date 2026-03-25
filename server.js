@@ -23,15 +23,18 @@ console.log('RECEIVER_EMAIL present:', !!process.env.RECEIVER_EMAIL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
-// Configure Nodemailer transporter with explicit settings
+// Configure Nodemailer transporter with explicit settings (Port 587 for STARTTLS)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use TLS
+    port: 587,
+    secure: false, // use STARTTLS
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000
 });
 
 // Verify connection configuration
