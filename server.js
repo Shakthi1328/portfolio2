@@ -15,9 +15,19 @@ app.use(cors());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Configure Nodemailer transporter
+// Log environment variable existence (but hide actual values for security)
+console.log('--- Environment Check ---');
+console.log('EMAIL_USER present:', !!process.env.EMAIL_USER);
+console.log('EMAIL_PASS present:', !!process.env.EMAIL_PASS);
+console.log('RECEIVER_EMAIL present:', !!process.env.RECEIVER_EMAIL);
+console.log('PORT:', process.env.PORT);
+console.log('-------------------------');
+
+// Configure Nodemailer transporter with explicit settings
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use TLS
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -27,9 +37,12 @@ const transporter = nodemailer.createTransport({
 // Verify connection configuration
 transporter.verify(function (error, success) {
     if (error) {
-        console.error('Nodemailer verification error:', error);
+        console.error('Nodemailer verification error DETECTED:');
+        console.error('- Message:', error.message);
+        console.error('- Code:', error.code);
+        console.error('- Command:', error.command);
     } else {
-        console.log('Server is ready to take our messages');
+        console.log('✅ Success: Server is ready to take our messages');
     }
 });
 
@@ -43,18 +56,20 @@ app.post('/api/contact', async (req, res) => {
 
     try {
         const mailOptions = {
-            from: process.env.EMAIL_USER, // ALWAYS use your own email as 'from' for Gmail
+            from: process.env.EMAIL_USER,
             to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER,
             subject: `Portfolio Contact from ${name}: ${subject || 'New Message'}`,
             text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-            replyTo: email // The user's email goes here so you can reply to them
+            replyTo: email
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`Email sent successfully from ${name}`);
+        console.log(`✅ Email sent successfully from ${name}`);
         res.status(200).json({ success: true, message: 'Message sent successfully!' });
     } catch (error) {
-        console.error('Error sending email:', error);
+        console.error('Error sending email trace:');
+        console.error('- Message:', error.message);
+        console.error('- Code:', error.code);
         res.status(500).json({ success: false, error: 'Failed to send message. Please try again later.' });
     }
 });
