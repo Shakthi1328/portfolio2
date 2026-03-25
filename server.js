@@ -23,15 +23,21 @@ console.log('RECEIVER_EMAIL present:', !!process.env.RECEIVER_EMAIL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
-// Configure Nodemailer transporter with more aggressive cloud settings
+// Configure Nodemailer transporter with pooling and longer timeouts
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // use STARTTLS
+    pool: true,    // keep connections open
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
+    connectionTimeout: 30000, // 30 seconds
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
     tls: {
-        rejectUnauthorized: false // Helps with some cloud network restrictions
+        rejectUnauthorized: false
     }
 });
 
