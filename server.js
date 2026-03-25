@@ -1,11 +1,20 @@
 require('dotenv').config();
 const express = require('express');
 const nodemailer = require('nodemailer');
+const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Database Connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
 // Middleware
 app.use(express.json());
@@ -20,6 +29,7 @@ console.log('--- Environment Check ---');
 console.log('EMAIL_USER present:', !!process.env.EMAIL_USER);
 console.log('EMAIL_PASS present:', !!process.env.EMAIL_PASS);
 console.log('RECEIVER_EMAIL present:', !!process.env.RECEIVER_EMAIL);
+console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
@@ -62,6 +72,17 @@ app.post('/api/contact', async (req, res) => {
     }
 
     try {
+        // 1. Store in Database first
+        if (process.env.DATABASE_URL) {
+            console.log('💾 Saving message to database...');
+            await pool.query(
+                'INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)',
+                [name, email, subject, message]
+            );
+            console.log('✅ Success: Message stored in SQL');
+        }
+
+        // 2. Send via Email
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.RECEIVER_EMAIL || process.env.EMAIL_USER,
@@ -72,7 +93,7 @@ app.post('/api/contact', async (req, res) => {
 
         await transporter.sendMail(mailOptions);
         console.log(`✅ Email sent successfully to inbox for ${name}`);
-        res.status(200).json({ success: true, message: 'Message sent successfully!' });
+        res.status(200).json({ success: true, message: 'Message sent successfully (Saved + Email)!' });
     } catch (error) {
         console.error('❌ Error sending email trace:');
         console.error('- Message:', error.message);
