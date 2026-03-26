@@ -28,7 +28,36 @@ console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
-// ... (Nodemailer config remains same) ...
+// Configure Nodemailer transporter with extra-long timeouts for cloud stability
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // use STARTTLS
+    pool: true,    // keep connections open
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: 60000, // 60 seconds
+    greetingTimeout: 60000,
+    socketTimeout: 60000,
+    debug: true,
+    logger: true,
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+// Verify connection configuration (log but don't crash)
+transporter.verify(function (error, success) {
+    if (error) {
+        console.log('⚠️ Nodemailer Warning (SMTP restricted by network):');
+        console.log('- Details:', error.message);
+        console.log('💡 Note: Your messages will still be saved to the database!');
+    } else {
+        console.log('✅ Success: SMTP Server is connected and ready');
+    }
+});
 
 // Contact Route
 app.post('/api/contact', async (req, res) => {
