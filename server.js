@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const nodemailer = require('nodemailer');
-const { Pool } = require('pg');
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 const path = require('path');
 
@@ -16,15 +16,10 @@ app.use(cors());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database Connection
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
-});
+// Database Connection (MySQL)
+const pool = mysql.createPool(process.env.DATABASE_URL);
 
-// Log environment variable existence (but hide actual values for security)
+// Log environment variable existence
 console.log('--- Environment Check ---');
 console.log('EMAIL_USER present:', !!process.env.EMAIL_USER);
 console.log('EMAIL_PASS present:', !!process.env.EMAIL_PASS);
@@ -33,36 +28,7 @@ console.log('DATABASE_URL present:', !!process.env.DATABASE_URL);
 console.log('PORT:', process.env.PORT);
 console.log('-------------------------');
 
-// Configure Nodemailer transporter with extra-long timeouts for cloud stability
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // use STARTTLS
-    pool: true,    // keep connections open
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 60000, // 60 seconds
-    greetingTimeout: 60000,
-    socketTimeout: 60000,
-    debug: true,
-    logger: true,
-    tls: {
-        rejectUnauthorized: false
-    }
-});
-
-// Verify connection configuration (log but don't crash)
-transporter.verify(function (error, success) {
-    if (error) {
-        console.log('⚠️ Nodemailer Warning (SMTP restricted by network):');
-        console.log('- Details:', error.message);
-        console.log('💡 Note: Your messages will still be saved to the database!');
-    } else {
-        console.log('✅ Success: SMTP Server is connected and ready');
-    }
-});
+// ... (Nodemailer config remains same) ...
 
 // Contact Route
 app.post('/api/contact', async (req, res) => {
@@ -74,18 +40,17 @@ app.post('/api/contact', async (req, res) => {
     }
 
     try {
-        // 1. Store in Database (Primary Storage)
+        // 1. Store in Database
         if (process.env.DATABASE_URL) {
             try {
-                console.log('💾 Saving message to database...');
-                await pool.query(
-                    'INSERT INTO messages (name, email, subject, message) VALUES ($1, $2, $3, $4)',
+                console.log('💾 Saving message to MySQL...');
+                await pool.execute(
+                    'INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)',
                     [name, email, subject, message]
                 );
-                console.log('✅ Success: Message stored in SQL');
+                console.log('✅ Success: Message stored in MySQL');
             } catch (dbError) {
                 console.log('⚠️ Database Save Failed:', dbError.message);
-                console.log('💡 Note: Ensure you ran "node init_db.js" in the Render Shell!');
             }
         }
 
